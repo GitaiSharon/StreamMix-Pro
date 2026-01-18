@@ -515,9 +515,10 @@ function App() {
             {/* --- Preview & Save Modal --- */}
             {previewBlob && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-zinc-950/95 via-indigo-950/90 to-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300 p-2 md:p-4 overflow-hidden">
-                    <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-[98vw] md:max-w-4xl h-[96vh] md:h-auto max-h-[96vh] p-3 md:p-6 flex flex-col gap-3 md:gap-6 ring-1 ring-white/5 overflow-hidden">
+                    <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-[98vw] lg:max-w-7xl h-[96vh] p-3 md:p-4 lg:p-6 flex flex-col gap-3 md:gap-4 ring-1 ring-white/5 overflow-hidden">
 
-                        <div className="flex justify-between items-center border-b border-white/5 pb-2 md:pb-4 shrink-0">
+                        {/* Header */}
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2 md:pb-3 shrink-0">
                             <h2 className="text-base md:text-xl font-bold text-zinc-100 flex items-center gap-2">
                                 <span className="w-1.5 h-4 md:w-2 md:h-6 bg-indigo-500 rounded-full"></span>
                                 <span className="hidden sm:inline">Review Recording</span>
@@ -528,79 +529,102 @@ function App() {
                             </div>
                         </div>
 
-                        <div className="aspect-video bg-black rounded-lg md:rounded-xl overflow-hidden shadow-2xl relative ring-1 ring-white/10 shrink-0">
-                            <video
-                                ref={previewVideoRef}
-                                controls
-                                className="w-full h-full object-contain"
-                                onTimeUpdate={handleTimeUpdate}
-                            />
-                        </div>
+                        {/* Main Content - Horizontal Layout */}
+                        <div className="flex-1 flex flex-col lg:flex-row gap-3 md:gap-4 overflow-hidden">
 
-                        {/* Trimming UI */}
-                        <div className="bg-zinc-950/50 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/5 flex flex-col gap-2 md:gap-4 shrink-0 max-h-[25vh] overflow-y-auto">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="font-medium text-zinc-400">Timeline Trim</span>
-                                <div className="flex gap-4 font-mono text-xs text-zinc-500">
-                                    <span>START: <span className="text-zinc-200">{trimStart.toFixed(1)}s</span></span>
-                                    <span>END: <span className="text-zinc-200">{trimEnd.toFixed(1)}s</span></span>
-                                    <button onClick={resetTrim} className="ml-2 text-indigo-400 hover:text-white flex items-center gap-1"><IconRefresh size={10} /> Reset</button>
+                            {/* Left Side - Video Player */}
+                            <div className="flex-1 lg:w-[62%] flex flex-col gap-3 overflow-hidden">
+                                <div className="flex-1 bg-black rounded-lg md:rounded-xl overflow-hidden shadow-2xl relative ring-1 ring-white/10">
+                                    <video
+                                        ref={previewVideoRef}
+                                        controls
+                                        className="w-full h-full object-contain"
+                                        onTimeUpdate={handleTimeUpdate}
+                                    />
                                 </div>
                             </div>
 
-                            {/* Scrub Bar */}
-                            <div className="relative h-2 bg-zinc-800 rounded-full w-full mt-2">
-                                <div
-                                    className="absolute h-full bg-indigo-500/50 rounded-full"
-                                    style={{ left: `${(trimStart / videoDuration) * 100}%`, width: `${((trimEnd - trimStart) / videoDuration) * 100}%` }}
-                                />
-                                {/* Handles - purely visual indicators of current button values */}
-                                <div className="absolute h-4 w-4 bg-white rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-2 hover:scale-110 transition-transform" style={{ left: `${(trimStart / videoDuration) * 100}%` }} title="Start Point" />
-                                <div className="absolute h-4 w-4 bg-white rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-2 hover:scale-110 transition-transform" style={{ left: `${(trimEnd / videoDuration) * 100}%` }} title="End Point" />
-                            </div>
+                            {/* Right Side - Controls & Settings */}
+                            <div className="lg:w-[38%] flex flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1">
 
-                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                                <button onClick={() => setTrimStart(previewVideoRef.current?.currentTime || 0)} className="text-[10px] md:text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors whitespace-nowrap">Set Start</button>
-                                <button onClick={() => setTrimEnd(previewVideoRef.current?.currentTime || 0)} className="text-[10px] md:text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors whitespace-nowrap">Set End</button>
-                                <div className="hidden sm:block flex-1" />
-                                <button onClick={playPreview} className="text-[10px] md:text-xs flex items-center gap-2 px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded border border-indigo-500/20 transition-all justify-center"><IconPlay size={12} /> Preview</button>
-                            </div>
-                        </div>
+                                {/* Trimming UI */}
+                                <div className="bg-zinc-950/50 rounded-lg md:rounded-xl p-3 md:p-4 border border-white/5 flex flex-col gap-3 shrink-0">
+                                    <div className="flex justify-between items-start text-sm">
+                                        <span className="font-medium text-zinc-400">Timeline Trim</span>
+                                        <button onClick={resetTrim} className="text-indigo-400 hover:text-white flex items-center gap-1 text-xs">
+                                            <IconRefresh size={10} /> Reset
+                                        </button>
+                                    </div>
 
-                        <div className="flex flex-col gap-1 md:gap-2 shrink-0">
-                            <label className="text-[10px] md:text-xs text-zinc-500 font-medium ml-1 uppercase tracking-wider">Project Name</label>
-                            <input
-                                type="text"
-                                value={fileName}
-                                onChange={(e) => setFileName(e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-zinc-100 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
-                            />
-                        </div>
+                                    <div className="flex gap-3 font-mono text-xs text-zinc-500">
+                                        <span>START: <span className="text-zinc-200">{trimStart.toFixed(1)}s</span></span>
+                                        <span>END: <span className="text-zinc-200">{trimEnd.toFixed(1)}s</span></span>
+                                    </div>
 
-                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-2 shrink-0">
-                            {!showDiscardConfirm ? (
-                                <button onClick={() => setShowDiscardConfirm(true)} className="px-4 py-2 text-sm text-zinc-500 hover:text-red-400 transition-colors">Discard</button>
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-zinc-400">Confirm?</span>
-                                    <button onClick={discardPreview} className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white rounded text-xs font-bold transition-all">Yes, Discard</button>
-                                    <button onClick={() => setShowDiscardConfirm(false)} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-all">Cancel</button>
+                                    {/* Scrub Bar */}
+                                    <div className="relative h-2 bg-zinc-800 rounded-full w-full">
+                                        <div
+                                            className="absolute h-full bg-indigo-500/50 rounded-full"
+                                            style={{ left: `${(trimStart / videoDuration) * 100}%`, width: `${((trimEnd - trimStart) / videoDuration) * 100}%` }}
+                                        />
+                                        <div className="absolute h-4 w-4 bg-white rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-2 hover:scale-110 transition-transform" style={{ left: `${(trimStart / videoDuration) * 100}%` }} title="Start Point" />
+                                        <div className="absolute h-4 w-4 bg-white rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-2 hover:scale-110 transition-transform" style={{ left: `${(trimEnd / videoDuration) * 100}%` }} title="End Point" />
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex gap-2">
+                                            <button onClick={() => setTrimStart(previewVideoRef.current?.currentTime || 0)} className="flex-1 text-xs px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors">Set Start</button>
+                                            <button onClick={() => setTrimEnd(previewVideoRef.current?.currentTime || 0)} className="flex-1 text-xs px-2 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors">Set End</button>
+                                        </div>
+                                        <button onClick={playPreview} className="text-xs flex items-center justify-center gap-2 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded border border-indigo-500/20 transition-all">
+                                            <IconPlay size={12} /> Preview Selection
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
 
-                            <div className="flex gap-3">
-                                <button onClick={() => saveRecording(fileName)} className="px-5 py-2.5 text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg border border-transparent hover:border-white/10 transition-all">
-                                    Save Original
-                                </button>
-                                <button
-                                    onClick={() => trimAndSaveRecording(fileName, trimStart, trimEnd)}
-                                    disabled={isProcessing}
-                                    className="px-6 py-2.5 bg-zinc-100 text-zinc-950 hover:bg-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-wait"
-                                >
-                                    {isProcessing ? <IconSettings className="animate-spin" /> : <IconDownload size={18} />}
-                                    {isProcessing ? 'Processing...' : 'Save Trimmed'}
-                                </button>
+                                {/* Project Name */}
+                                <div className="flex flex-col gap-2 shrink-0">
+                                    <label className="text-xs text-zinc-500 font-medium ml-1 uppercase tracking-wider">Project Name</label>
+                                    <input
+                                        type="text"
+                                        value={fileName}
+                                        onChange={(e) => setFileName(e.target.value)}
+                                        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
+                                    />
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col gap-3 mt-auto shrink-0">
+                                    {!showDiscardConfirm ? (
+                                        <button onClick={() => setShowDiscardConfirm(true)} className="text-sm text-zinc-500 hover:text-red-400 transition-colors text-left">Discard Recording</button>
+                                    ) : (
+                                        <div className="flex items-center gap-2 p-2 bg-red-500/5 rounded border border-red-500/20">
+                                            <span className="text-sm text-zinc-400 flex-1">Confirm delete?</span>
+                                            <button onClick={discardPreview} className="px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500 hover:text-white rounded text-xs font-bold transition-all">Yes</button>
+                                            <button onClick={() => setShowDiscardConfirm(false)} className="px-3 py-1.5 text-zinc-400 hover:text-zinc-200 text-xs transition-all">No</button>
+                                        </div>
+                                    )}
+
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            onClick={() => saveRecording(fileName)}
+                                            className="w-full px-4 py-2.5 text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg border border-white/10 hover:border-white/20 transition-all"
+                                        >
+                                            Save Original
+                                        </button>
+                                        <button
+                                            onClick={() => trimAndSaveRecording(fileName, trimStart, trimEnd)}
+                                            disabled={isProcessing}
+                                            className="w-full px-4 py-3 bg-zinc-100 text-zinc-950 hover:bg-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
+                                        >
+                                            {isProcessing ? <IconSettings className="animate-spin" /> : <IconDownload size={18} />}
+                                            {isProcessing ? 'Processing...' : 'Save Trimmed'}
+                                        </button>
+                                    </div>
+                                </div>
+
                             </div>
+
                         </div>
 
                     </div>
