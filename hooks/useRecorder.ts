@@ -48,7 +48,7 @@ export const useRecorder = (): UseRecorderReturn => {
   const [recordingTime, setRecordingTime] = useState(0);
   const [countdownValue, setCountdownValue] = useState(0);
   const [supportedFormats, setSupportedFormats] = useState<FormatOption[]>([]);
-  
+
   const [isWebcamOn, setIsWebcamOn] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [brushColor, setBrushColor] = useState('#ef4444');
@@ -62,13 +62,13 @@ export const useRecorder = (): UseRecorderReturn => {
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  
+
   const webcamConfigRef = useRef<WebcamConfig>({ active: false, x: 50, y: 50, size: 200 });
   const annotationsRef = useRef<DrawingPath[]>([]);
   const currentPathRef = useRef<DrawingPath | null>(null);
   const isDraggingWebcamRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
-  
+
   const ripplesRef = useRef<Ripple[]>([]);
   const watermarkImgRef = useRef<HTMLImageElement | null>(null);
 
@@ -102,7 +102,7 @@ export const useRecorder = (): UseRecorderReturn => {
         req.onsuccess = () => resolve(req.result);
       });
       if (count > 0) setHasRecoverableRecording(true);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const saveChunkToDB = async (chunk: Blob) => {
@@ -110,7 +110,7 @@ export const useRecorder = (): UseRecorderReturn => {
       const db = await initDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
       tx.objectStore(STORE_NAME).add(chunk);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const clearDB = async () => {
@@ -119,7 +119,7 @@ export const useRecorder = (): UseRecorderReturn => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       tx.objectStore(STORE_NAME).clear();
       setHasRecoverableRecording(false);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   const getAllChunksFromDB = async (): Promise<Blob[]> => {
@@ -180,27 +180,27 @@ export const useRecorder = (): UseRecorderReturn => {
         const videoRatio = video.videoWidth / video.videoHeight;
         const canvasRatio = canvas.width / canvas.height;
         let drawW = canvas.width, drawH = canvas.height, offsetX = 0, offsetY = 0;
-        if (videoRatio > canvasRatio) { drawH = canvas.width / videoRatio; offsetY = (canvas.height - drawH) / 2; } 
+        if (videoRatio > canvasRatio) { drawH = canvas.width / videoRatio; offsetY = (canvas.height - drawH) / 2; }
         else { drawW = canvas.height * videoRatio; offsetX = (canvas.width - drawW) / 2; }
         ctx.drawImage(video, offsetX, offsetY, drawW, drawH);
 
         if (watermarkImgRef.current?.complete) {
-            const img = watermarkImgRef.current;
-            const targetWidth = 150;
-            const targetHeight = img.naturalHeight * (targetWidth / img.naturalWidth);
-            ctx.save(); ctx.globalAlpha = 0.7; ctx.drawImage(img, canvas.width - targetWidth - 20, canvas.height - targetHeight - 20, targetWidth, targetHeight); ctx.restore();
+          const img = watermarkImgRef.current;
+          const targetWidth = 150;
+          const targetHeight = img.naturalHeight * (targetWidth / img.naturalWidth);
+          ctx.save(); ctx.globalAlpha = 0.7; ctx.drawImage(img, canvas.width - targetWidth - 20, canvas.height - targetHeight - 20, targetWidth, targetHeight); ctx.restore();
         }
 
         if (ripplesRef.current.length > 0) {
-            ctx.save(); ctx.lineWidth = 3;
-            for (let i = ripplesRef.current.length - 1; i >= 0; i--) {
-                const ripple = ripplesRef.current[i];
-                ctx.beginPath(); ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(250, 204, 21, ${ripple.alpha})`; ctx.stroke();
-                ripple.radius += 2.5; ripple.alpha -= 0.03;
-                if (ripple.alpha <= 0) ripplesRef.current.splice(i, 1);
-            }
-            ctx.restore();
+          ctx.save(); ctx.lineWidth = 3;
+          for (let i = ripplesRef.current.length - 1; i >= 0; i--) {
+            const ripple = ripplesRef.current[i];
+            ctx.beginPath(); ctx.arc(ripple.x, ripple.y, ripple.radius, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(250, 204, 21, ${ripple.alpha})`; ctx.stroke();
+            ripple.radius += 2.5; ripple.alpha -= 0.03;
+            if (ripple.alpha <= 0) ripplesRef.current.splice(i, 1);
+          }
+          ctx.restore();
         }
 
         annotationsRef.current.forEach(path => {
@@ -211,20 +211,20 @@ export const useRecorder = (): UseRecorderReturn => {
           ctx.stroke();
         });
         if (currentPathRef.current) {
-            const path = currentPathRef.current;
-            ctx.beginPath(); ctx.strokeStyle = path.color; ctx.lineWidth = path.width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            ctx.moveTo(path.points[0].x, path.points[0].y);
-            for (let i = 1; i < path.points.length; i++) ctx.lineTo(path.points[i].x, path.points[i].y);
-            ctx.stroke();
+          const path = currentPathRef.current;
+          ctx.beginPath(); ctx.strokeStyle = path.color; ctx.lineWidth = path.width; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.moveTo(path.points[0].x, path.points[0].y);
+          for (let i = 1; i < path.points.length; i++) ctx.lineTo(path.points[i].x, path.points[i].y);
+          ctx.stroke();
         }
 
         const wc = webcamConfigRef.current;
         if (wc.active && webcamVideoRef.current && webcamVideoRef.current.readyState >= 2) {
-            ctx.save(); ctx.beginPath(); ctx.arc(wc.x + wc.size/2, wc.y + wc.size/2, wc.size/2, 0, Math.PI * 2); ctx.clip();
-            const v = webcamVideoRef.current;
-            const sSize = Math.min(v.videoWidth, v.videoHeight);
-            ctx.drawImage(v, (v.videoWidth - sSize)/2, (v.videoHeight - sSize)/2, sSize, sSize, wc.x, wc.y, wc.size, wc.size);
-            ctx.lineWidth = 4; ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
+          ctx.save(); ctx.beginPath(); ctx.arc(wc.x + wc.size / 2, wc.y + wc.size / 2, wc.size / 2, 0, Math.PI * 2); ctx.clip();
+          const v = webcamVideoRef.current;
+          const sSize = Math.min(v.videoWidth, v.videoHeight);
+          ctx.drawImage(v, (v.videoWidth - sSize) / 2, (v.videoHeight - sSize) / 2, sSize, sSize, wc.x, wc.y, wc.size, wc.size);
+          ctx.lineWidth = 4; ctx.strokeStyle = '#ffffff'; ctx.stroke(); ctx.restore();
         }
       }
       animationFrameRef.current = requestAnimationFrame(draw);
@@ -233,41 +233,41 @@ export const useRecorder = (): UseRecorderReturn => {
   };
 
   const setupAudio = async (micStream: MediaStream | null, sysStream: MediaStream | null, useDelay: boolean) => {
-     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-     const ctx = new AudioContextClass({ sampleRate: 48000, latencyHint: 'playback' });
-     if (ctx.state === 'suspended') await ctx.resume();
-     audioContextRef.current = ctx;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const ctx = new AudioContextClass({ sampleRate: 48000, latencyHint: 'playback' });
+    if (ctx.state === 'suspended') await ctx.resume();
+    audioContextRef.current = ctx;
 
-     const dest = ctx.createMediaStreamDestination();
-     dest.channelCount = 2;
-     
-     let outputNode: AudioNode = dest;
-     if (useDelay) {
-        const delayNode = ctx.createDelay(1.0); 
-        delayNode.delayTime.value = 0.1;
-        delayNode.connect(dest);
-        outputNode = delayNode;
-     }
+    const dest = ctx.createMediaStreamDestination();
+    dest.channelCount = 2;
 
-     if (sysStream?.getAudioTracks().length) {
-        const sysSource = ctx.createMediaStreamSource(sysStream);
-        const sysGain = ctx.createGain();
-        sysGain.gain.value = isSystemAudioMuted ? 0 : 1.0;
-        sysSource.connect(sysGain).connect(outputNode);
-        sysGainRef.current = sysGain;
-     }
-     
-     if (micStream?.getAudioTracks().length) {
-         const micSource = ctx.createMediaStreamSource(micStream);
-         const micGain = ctx.createGain();
-         micGain.gain.value = isMicMuted ? 0 : 1.0;
-         micSource.connect(micGain).connect(outputNode);
-         micGainRef.current = micGain;
-         const analyser = ctx.createAnalyser(); analyser.fftSize = 256; micGain.connect(analyser);
-         setMicAnalyser(analyser);
-     } else setMicAnalyser(null);
-     
-     return dest.stream.getAudioTracks()[0];
+    let outputNode: AudioNode = dest;
+    if (useDelay) {
+      const delayNode = ctx.createDelay(1.0);
+      delayNode.delayTime.value = 0.1;
+      delayNode.connect(dest);
+      outputNode = delayNode;
+    }
+
+    if (sysStream?.getAudioTracks().length) {
+      const sysSource = ctx.createMediaStreamSource(sysStream);
+      const sysGain = ctx.createGain();
+      sysGain.gain.value = isSystemAudioMuted ? 0 : 1.0;
+      sysSource.connect(sysGain).connect(outputNode);
+      sysGainRef.current = sysGain;
+    }
+
+    if (micStream?.getAudioTracks().length) {
+      const micSource = ctx.createMediaStreamSource(micStream);
+      const micGain = ctx.createGain();
+      micGain.gain.value = isMicMuted ? 0 : 1.0;
+      micSource.connect(micGain).connect(outputNode);
+      micGainRef.current = micGain;
+      const analyser = ctx.createAnalyser(); analyser.fftSize = 256; micGain.connect(analyser);
+      setMicAnalyser(analyser);
+    } else setMicAnalyser(null);
+
+    return dest.stream.getAudioTracks()[0];
   };
 
   const startRecording = async (settings: RecorderSettings) => {
@@ -279,64 +279,104 @@ export const useRecorder = (): UseRecorderReturn => {
       if (settings.quality === '4k') { width = 3840; height = 2160; }
       else if (settings.quality === '720p') { width = 1280; height = 720; }
 
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ 
-        video: { width, height, frameRate: settings.frameRate }, 
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } 
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { width, height, frameRate: settings.frameRate },
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
       });
-      
+
       let micStream: MediaStream | null = null;
       if (settings.enableAudio) {
-         try { micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 } }); } catch (e) {}
+        try { micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 } }); } catch (e) { }
       }
 
       const mixedAudioTrack = await setupAudio(micStream, screenStream, settings.recordingMode === 'studio');
+
+      // Create screen video element and add to DOM (critical for Chrome playback)
       const screenVid = document.createElement('video');
-      screenVid.muted = true; screenVid.srcObject = screenStream;
-      await screenVid.play(); screenVideoRef.current = screenVid;
-      
+      screenVid.muted = true;
+      screenVid.playsInline = true;  // Important for mobile/modern browsers
+      screenVid.autoplay = true;     // Ensure auto-playback
+      screenVid.style.position = 'absolute';
+      screenVid.style.top = '-9999px';  // Hide offscreen but keep in DOM
+      screenVid.style.left = '-9999px';
+      screenVid.style.pointerEvents = 'none';
+      document.body.appendChild(screenVid);
+
+      screenVid.srcObject = screenStream;
+      await screenVid.play();
+
+      // Wait for video metadata to ensure it's ready
+      await new Promise((resolve) => {
+        if (screenVid.readyState >= 2) resolve(null);
+        else screenVid.onloadedmetadata = () => resolve(null);
+      });
+
+      screenVideoRef.current = screenVid;
+
       if (canvasRef.current) {
-         canvasRef.current.width = screenVid.videoWidth; canvasRef.current.height = screenVid.videoHeight;
-         webcamConfigRef.current.x = screenVid.videoWidth - 300; webcamConfigRef.current.y = 50;
+        canvasRef.current.width = screenVid.videoWidth; canvasRef.current.height = screenVid.videoHeight;
+        webcamConfigRef.current.x = screenVid.videoWidth - 300; webcamConfigRef.current.y = 50;
       }
 
       let finalStream: MediaStream;
       if (settings.recordingMode === 'native') {
-          const tracks = [screenStream.getVideoTracks()[0]];
-          if (mixedAudioTrack) tracks.push(mixedAudioTrack);
-          finalStream = new MediaStream(tracks);
-          startCompositingLoop();
+        const tracks = [screenStream.getVideoTracks()[0]];
+        if (mixedAudioTrack) tracks.push(mixedAudioTrack);
+        finalStream = new MediaStream(tracks);
+        startCompositingLoop();
       } else {
-          if (isWebcamOn) {
-              try {
-                 const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                 const camVid = document.createElement('video'); camVid.muted = true; camVid.srcObject = camStream;
-                 await camVid.play(); webcamVideoRef.current = camVid; webcamConfigRef.current.stream = camStream;
-              } catch(e) { setIsWebcamOn(false); }
-          }
-          startCompositingLoop();
-          const canvasStream = canvasRef.current!.captureStream(settings.frameRate);
-          const combinedTracks = [canvasStream.getVideoTracks()[0]];
-          if (mixedAudioTrack) combinedTracks.push(mixedAudioTrack);
-          finalStream = new MediaStream(combinedTracks);
+        if (isWebcamOn) {
+          try {
+            const camStream = await navigator.mediaDevices.getUserMedia({ video: true });
+
+            // Create webcam video element and add to DOM
+            const camVid = document.createElement('video');
+            camVid.muted = true;
+            camVid.playsInline = true;
+            camVid.autoplay = true;
+            camVid.style.position = 'absolute';
+            camVid.style.top = '-9999px';
+            camVid.style.left = '-9999px';
+            camVid.style.pointerEvents = 'none';
+            document.body.appendChild(camVid);
+
+            camVid.srcObject = camStream;
+            await camVid.play();
+
+            // Wait for webcam metadata
+            await new Promise((resolve) => {
+              if (camVid.readyState >= 2) resolve(null);
+              else camVid.onloadedmetadata = () => resolve(null);
+            });
+
+            webcamVideoRef.current = camVid;
+            webcamConfigRef.current.stream = camStream;
+          } catch (e) { setIsWebcamOn(false); }
+        }
+        startCompositingLoop();
+        const canvasStream = canvasRef.current!.captureStream(settings.frameRate);
+        const combinedTracks = [canvasStream.getVideoTracks()[0]];
+        if (mixedAudioTrack) combinedTracks.push(mixedAudioTrack);
+        finalStream = new MediaStream(combinedTracks);
       }
-      
+
       streamRef.current = finalStream;
       setStatus(RecorderStatus.COUNTDOWN);
       for (let i = settings.countdownDuration; i > 0; i--) { setCountdownValue(i); await new Promise(r => setTimeout(r, 1000)); }
 
       const opts: MediaRecorderOptions = {
-          mimeType: settings.mimeType || 'video/webm',
-          videoBitsPerSecond: settings.quality === '4k' ? 15000000 : 8000000,
-          audioBitsPerSecond: 320000
+        mimeType: settings.mimeType || 'video/webm',
+        videoBitsPerSecond: settings.quality === '4k' ? 15000000 : 8000000,
+        audioBitsPerSecond: 320000
       };
 
       const recorder = new MediaRecorder(finalStream, opts);
       mediaRecorderRef.current = recorder;
       recorder.ondataavailable = (e) => { if (e.data.size > 0) { chunksRef.current.push(e.data); saveChunkToDB(e.data); } };
       recorder.onstop = async () => { cleanup(); await preparePreview(); };
-      
+
       screenStream.getVideoTracks()[0].onended = () => stopRecording();
-      recorder.start(1000); 
+      recorder.start(1000);
       setStatus(RecorderStatus.RECORDING);
     } catch (err: any) {
       setStatus(RecorderStatus.ERROR); setErrorMessage(err.message || "Recording failed."); cleanup();
@@ -351,49 +391,49 @@ export const useRecorder = (): UseRecorderReturn => {
   const toggleSystemAudioMute = () => { setIsSystemAudioMuted(prev => { const n = !prev; if (sysGainRef.current) sysGainRef.current.gain.value = n ? 0 : 1; return n; }); };
 
   const preparePreview = async (recoveredChunks?: Blob[]) => {
-      const blobs = recoveredChunks || chunksRef.current;
-      if (blobs.length === 0) { setStatus(RecorderStatus.IDLE); return; }
-      setPreviewBlob(new Blob(blobs, { type: blobs[0].type }));
-      setStatus(RecorderStatus.IDLE);
+    const blobs = recoveredChunks || chunksRef.current;
+    if (blobs.length === 0) { setStatus(RecorderStatus.IDLE); return; }
+    setPreviewBlob(new Blob(blobs, { type: blobs[0].type }));
+    setStatus(RecorderStatus.IDLE);
   };
 
   const saveRecording = (fileName: string) => {
-     if (!previewBlob) return;
-     const url = URL.createObjectURL(previewBlob);
-     const a = document.createElement('a'); a.href = url; a.download = `${fileName || 'recording'}.${previewBlob.type.includes('mp4') ? 'mp4' : 'webm'}`;
-     document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url); clearDB(); setPreviewBlob(null);
+    if (!previewBlob) return;
+    const url = URL.createObjectURL(previewBlob);
+    const a = document.createElement('a'); a.href = url; a.download = `${fileName || 'recording'}.${previewBlob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); window.URL.revokeObjectURL(url); clearDB(); setPreviewBlob(null);
   };
 
   const trimAndSaveRecording = async (fileName: string, start: number, end: number) => {
-      if (!previewBlob) return;
-      setStatus(RecorderStatus.PROCESSING);
-      const video = document.createElement('video');
-      video.src = URL.createObjectURL(previewBlob);
-      video.muted = false; video.volume = 1.0; 
-      await new Promise(r => video.onloadedmetadata = r);
+    if (!previewBlob) return;
+    setStatus(RecorderStatus.PROCESSING);
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(previewBlob);
+    video.muted = false; video.volume = 1.0;
+    await new Promise(r => video.onloadedmetadata = r);
 
-      let stream: MediaStream;
-      // @ts-ignore
-      if (video.captureStream) stream = video.captureStream();
-      // @ts-ignore
-      else if (video.mozCaptureStream) stream = video.mozCaptureStream();
-      else { saveRecording(fileName); setStatus(RecorderStatus.IDLE); return; }
+    let stream: MediaStream;
+    // @ts-ignore
+    if (video.captureStream) stream = video.captureStream();
+    // @ts-ignore
+    else if (video.mozCaptureStream) stream = video.mozCaptureStream();
+    else { saveRecording(fileName); setStatus(RecorderStatus.IDLE); return; }
 
-      const recorder = new MediaRecorder(stream, { mimeType: previewBlob.type, audioBitsPerSecond: 320000, videoBitsPerSecond: 8000000 });
-      const chunks: Blob[] = [];
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-      recorder.onstop = () => {
-          const b = new Blob(chunks, { type: previewBlob.type });
-          const url = URL.createObjectURL(b);
-          const a = document.createElement('a'); a.href = url; a.download = `${fileName}_trimmed.${b.type.includes('mp4') ? 'mp4' : 'webm'}`;
-          a.click(); discardPreview(); setStatus(RecorderStatus.IDLE);
-      };
+    const recorder = new MediaRecorder(stream, { mimeType: previewBlob.type, audioBitsPerSecond: 320000, videoBitsPerSecond: 8000000 });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.onstop = () => {
+      const b = new Blob(chunks, { type: previewBlob.type });
+      const url = URL.createObjectURL(b);
+      const a = document.createElement('a'); a.href = url; a.download = `${fileName}_trimmed.${b.type.includes('mp4') ? 'mp4' : 'webm'}`;
+      a.click(); discardPreview(); setStatus(RecorderStatus.IDLE);
+    };
 
-      video.currentTime = start;
-      await new Promise(r => video.onseeked = r);
-      recorder.start(); video.play();
-      const check = () => { if (video.currentTime >= end || video.ended) { recorder.stop(); video.pause(); } else requestAnimationFrame(check); };
-      check();
+    video.currentTime = start;
+    await new Promise(r => video.onseeked = r);
+    recorder.start(); video.play();
+    const check = () => { if (video.currentTime >= end || video.ended) { recorder.stop(); video.pause(); } else requestAnimationFrame(check); };
+    check();
   };
 
   const discardPreview = useCallback(() => { setPreviewBlob(null); clearDB(); setStatus(RecorderStatus.IDLE); }, []);
@@ -406,18 +446,37 @@ export const useRecorder = (): UseRecorderReturn => {
   };
 
   const cleanup = useCallback(() => {
-     if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-     if (screenVideoRef.current) { screenVideoRef.current.srcObject = null; screenVideoRef.current = null; }
-     if (webcamVideoRef.current) { webcamVideoRef.current.srcObject = null; webcamVideoRef.current = null; }
-     if (audioContextRef.current) { audioContextRef.current.close().catch(() => {}); audioContextRef.current = null; }
-     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-     if (webcamConfigRef.current.stream) webcamConfigRef.current.stream.getTracks().forEach(t => t.stop());
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+    // Clean up screen video - remove from DOM
+    if (screenVideoRef.current) {
+      screenVideoRef.current.pause();
+      screenVideoRef.current.srcObject = null;
+      if (screenVideoRef.current.parentNode) {
+        screenVideoRef.current.parentNode.removeChild(screenVideoRef.current);
+      }
+      screenVideoRef.current = null;
+    }
+
+    // Clean up webcam video - remove from DOM
+    if (webcamVideoRef.current) {
+      webcamVideoRef.current.pause();
+      webcamVideoRef.current.srcObject = null;
+      if (webcamVideoRef.current.parentNode) {
+        webcamVideoRef.current.parentNode.removeChild(webcamVideoRef.current);
+      }
+      webcamVideoRef.current = null;
+    }
+
+    if (audioContextRef.current) { audioContextRef.current.close().catch(() => { }); audioContextRef.current = null; }
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    if (webcamConfigRef.current.stream) webcamConfigRef.current.stream.getTracks().forEach(t => t.stop());
   }, []);
 
   const getCanvasPoint = (e: React.MouseEvent<HTMLCanvasElement>): Point => {
-      const canvas = canvasRef.current!;
-      const rect = canvas.getBoundingClientRect();
-      return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return { x: (e.clientX - rect.left) * (canvas.width / rect.width), y: (e.clientY - rect.top) * (canvas.height / rect.height) };
   };
 
   return {
@@ -430,14 +489,14 @@ export const useRecorder = (): UseRecorderReturn => {
       const p = getCanvasPoint(e); const wc = webcamConfigRef.current;
       ripplesRef.current.push({ x: p.x, y: p.y, radius: 10, alpha: 1.0, maxRadius: 50 });
       if (isWebcamOn) {
-        const dx = p.x - (wc.x + wc.size/2), dy = p.y - (wc.y + wc.size/2);
-        if (dx*dx + dy*dy < (wc.size/2)*(wc.size/2)) { isDraggingWebcamRef.current = true; dragOffsetRef.current = { x: p.x - wc.x, y: p.y - wc.y }; return; }
+        const dx = p.x - (wc.x + wc.size / 2), dy = p.y - (wc.y + wc.size / 2);
+        if (dx * dx + dy * dy < (wc.size / 2) * (wc.size / 2)) { isDraggingWebcamRef.current = true; dragOffsetRef.current = { x: p.x - wc.x, y: p.y - wc.y }; return; }
       }
       if (isDrawingMode) currentPathRef.current = { points: [p], color: brushColor, width: 5 };
     },
     handleCanvasMouseMove: (e) => {
       const p = getCanvasPoint(e);
-      if (isDraggingWebcamRef.current) { webcamConfigRef.current.x = p.x - dragOffsetRef.current.x; webcamConfigRef.current.y = p.y - dragOffsetRef.current.y; } 
+      if (isDraggingWebcamRef.current) { webcamConfigRef.current.x = p.x - dragOffsetRef.current.x; webcamConfigRef.current.y = p.y - dragOffsetRef.current.y; }
       else if (isDrawingMode && currentPathRef.current) currentPathRef.current.points.push(p);
     },
     handleCanvasMouseUp: () => { isDraggingWebcamRef.current = false; if (currentPathRef.current) { annotationsRef.current.push(currentPathRef.current); currentPathRef.current = null; } }
