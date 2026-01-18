@@ -37,6 +37,7 @@ interface UseRecorderReturn {
   previewBlob: Blob | null;
   saveRecording: (fileName: string) => void;
   trimAndSaveRecording: (fileName: string, start: number, end: number) => Promise<void>;
+  trimProgress: number;
   discardPreview: () => void;
   setWatermarkFile: (file: File | null) => void;
 }
@@ -54,6 +55,7 @@ export const useRecorder = (): UseRecorderReturn => {
   const [brushColor, setBrushColor] = useState('#ef4444');
   const [hasRecoverableRecording, setHasRecoverableRecording] = useState(false);
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [trimProgress, setTrimProgress] = useState(0); // Progress 0-100
 
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isSystemAudioMuted, setIsSystemAudioMuted] = useState(false);
@@ -410,9 +412,12 @@ export const useRecorder = (): UseRecorderReturn => {
   const trimAndSaveRecording = async (fileName: string, start: number, end: number) => {
     if (!previewBlob) return;
     setStatus(RecorderStatus.PROCESSING);
+    setTrimProgress(0); // Reset progress
+
     const video = document.createElement('video');
     video.src = URL.createObjectURL(previewBlob);
-    video.muted = false; video.volume = 1.0;
+    video.muted = true; // Mute to prevent audio playback
+    video.volume = 0;
     await new Promise(r => video.onloadedmetadata = r);
 
     let stream: MediaStream;
@@ -420,7 +425,7 @@ export const useRecorder = (): UseRecorderReturn => {
     if (video.captureStream) stream = video.captureStream();
     // @ts-ignore
     else if (video.mozCaptureStream) stream = video.mozCaptureStream();
-    else { saveRecording(fileName); setStatus(RecorderStatus.IDLE); return; }
+    else { saveRecording(fileName); setStatus(RecorderStatus.IDLE); setTrimProgress(0); return; }
 
     const recorder = new MediaRecorder(stream, { mimeType: previewBlob.type, audioBitsPerSecond: 320000, videoBitsPerSecond: 8000000 });
     const chunks: Blob[] = [];
@@ -429,13 +434,31 @@ export const useRecorder = (): UseRecorderReturn => {
       const b = new Blob(chunks, { type: previewBlob.type });
       const url = URL.createObjectURL(b);
       const a = document.createElement('a'); a.href = url; a.download = `${fileName}_trimmed.${b.type.includes('mp4') ? 'mp4' : 'webm'}`;
-      a.click(); discardPreview(); setStatus(RecorderStatus.IDLE);
+      a.click();
+      setTrimProgress(0); // Reset progress
+      discardPreview();
+      setStatus(RecorderStatus.IDLE);
     };
 
     video.currentTime = start;
     await new Promise(r => video.onseeked = r);
+    video.playbackRate = 1.0; // CRITICAL: Ensure normal speed playback
     recorder.start(); video.play();
-    const check = () => { if (video.currentTime >= end || video.ended) { recorder.stop(); video.pause(); } else requestAnimationFrame(check); };
+
+    const duration = end - start;
+    const check = () => {
+      if (video.currentTime >= end || video.ended) {
+        setTrimProgress(100); // Complete
+        recorder.stop();
+        video.pause();
+      } else {
+        // Calculate progress based on current position
+        const elapsed = video.currentTime - start;
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        setTrimProgress(Math.floor(progress));
+        requestAnimationFrame(check);
+      }
+    };
     check();
   };
 
@@ -487,7 +510,7 @@ export const useRecorder = (): UseRecorderReturn => {
     recordingTime, supportedFormats, countdownValue, isWebcamOn, toggleWebcam: () => setIsWebcamOn(p => !p),
     isDrawingMode, toggleDrawingMode: () => setIsDrawingMode(p => !p), brushColor, setBrushColor, clearCanvas: () => { annotationsRef.current = []; },
     isMicMuted, toggleMicMute, isSystemAudioMuted, toggleSystemAudioMute, hasRecoverableRecording, recoverRecording, discardRecovery,
-    previewBlob, saveRecording, trimAndSaveRecording, discardPreview, setWatermarkFile,
+    previewBlob, saveRecording, trimAndSaveRecording, trimProgress, discardPreview, setWatermarkFile,
     handleCanvasMouseDown: (e) => {
       const p = getCanvasPoint(e); const wc = webcamConfigRef.current;
       ripplesRef.current.push({ x: p.x, y: p.y, radius: 10, alpha: 1.0, maxRadius: 50 });

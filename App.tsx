@@ -78,6 +78,7 @@ function App() {
         previewBlob,
         saveRecording,
         trimAndSaveRecording,
+        trimProgress,
         discardPreview,
         setWatermarkFile
     } = useRecorder();
@@ -545,7 +546,7 @@ function App() {
                             </div>
 
                             {/* Right Side - Controls & Settings */}
-                            <div className="lg:w-[38%] flex flex-col gap-3 overflow-y-auto overflow-x-hidden pr-1">
+                            <div className="lg:w-[38%] flex flex-col gap-3 overflow-hidden pr-1">", "StartLine": 555
 
                                 {/* Trimming UI */}
                                 <div className="bg-zinc-950/50 rounded-lg md:rounded-xl p-3 md:p-4 border border-white/5 flex flex-col gap-3 shrink-0">
@@ -617,9 +618,23 @@ function App() {
                                             disabled={isProcessing}
                                             className="w-full px-4 py-3 bg-zinc-100 text-zinc-950 hover:bg-white font-bold rounded-lg shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-wait"
                                         >
-                                            {isProcessing ? <IconSettings className="animate-spin" /> : <IconDownload size={18} />}
-                                            {isProcessing ? 'Processing...' : 'Save Trimmed'}
+                                            {isProcessing ? (
+                                                <>
+                                                    <IconSettings className="animate-spin" />
+                                                    <span>Processing Trim...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <IconDownload size={18} />
+                                                    Save Trimmed
+                                                </>
+                                            )}
                                         </button>
+                                        {isProcessing && (
+                                            <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                                                <div className="bg-gradient-to-r from-indigo-500 to-violet-500 h-full rounded-full transition-all duration-300 animate-pulse" style={{ width: '100%' }}></div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -627,6 +642,27 @@ function App() {
 
                         </div>
 
+                    </div>
+                </div>
+            )}
+
+            {/* Full-Screen Progress Overlay */}
+            {isProcessing && previewBlob && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-6 p-8 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 rounded-2xl border border-white/10 shadow-2xl">
+                        <div className="flex flex-col items-center gap-3">
+                            <IconSettings className="w-12 h-12 text-indigo-400 animate-spin" />
+                            <h3 className="text-xl font-bold text-zinc-100">Processing Trim</h3>
+                            <p className="text-sm text-zinc-400">Please wait while we save your trimmed video...</p>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-80 max-w-full">
+                            <div className="w-full bg-zinc-800 rounded-full h-3 overflow-hidden shadow-inner">
+                                <div className="h-full bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 rounded-full transition-all duration-300" style={{ width: `${trimProgress}%` }}></div>
+                            </div>
+                            <p className="text-xs text-zinc-500 text-center mt-2">{trimProgress}% - Encoding video...</p>
+                        </div>
                     </div>
                 </div>
             )}
