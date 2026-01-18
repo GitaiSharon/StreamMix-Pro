@@ -216,7 +216,7 @@ function App() {
 
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-indigo-500/30 flex flex-col relative overflow-hidden">
+        <div className="h-screen w-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-indigo-500/30 flex flex-col relative overflow-hidden">
 
             {/* --- Background Ambient Glow --- */}
             <div className="fixed inset-0 pointer-events-none z-0">
@@ -225,20 +225,20 @@ function App() {
             </div>
 
             {/* --- Top Configuration Bar --- */}
-            <header className="relative z-10 w-full px-6 py-4 flex items-center justify-between border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                        <div className="w-3 h-3 bg-white rounded-full shadow-inner" />
+            <header className="relative z-10 w-full px-3 md:px-6 py-2 md:py-3 flex items-center justify-between border-b border-white/5 bg-zinc-950/50 backdrop-blur-sm shrink-0">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <div className="w-6 h-6 md:w-8 md:h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <div className="w-2 h-2 md:w-3 md:h-3 bg-white rounded-full shadow-inner" />
                     </div>
-                    <div>
-                        <h1 className="text-sm font-bold tracking-tight text-zinc-100">StreamMix <span className="text-indigo-400">Pro</span></h1>
-                        <span className="text-[10px] text-zinc-500 font-medium tracking-wide uppercase">Studio Edition</span>
+                    <div className="hidden sm:block">
+                        <h1 className="text-xs md:text-sm font-bold tracking-tight text-zinc-100">StreamMix <span className="text-indigo-400">Pro</span></h1>
+                        <span className="text-[9px] md:text-[10px] text-zinc-500 font-medium tracking-wide uppercase">Studio Edition</span>
                     </div>
                 </div>
 
-                <div className={`flex items-center gap-4 transition-opacity duration-300 ${isBusy ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
+                <div className={`flex items-center gap-2 md:gap-4 transition-opacity duration-300 ${isBusy ? 'opacity-30 pointer-events-none' : 'opacity-100'}`}>
                     {/* Mode Switcher */}
-                    <div className="flex bg-zinc-900/50 p-1 rounded-lg border border-white/5">
+                    <div className="hidden md:flex bg-zinc-900/50 p-1 rounded-lg border border-white/5">
                         <button
                             onClick={() => setSettings(s => ({ ...s, recordingMode: 'native' }))}
                             className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${settings.recordingMode === 'native' ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -253,10 +253,10 @@ function App() {
                         </button>
                     </div>
 
-                    <div className="h-4 w-px bg-white/10" />
+                    <div className="hidden md:block h-4 w-px bg-white/10" />
 
                     {/* Quick Settings */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 md:gap-2 flex-wrap">
                         {/* Format Selector */}
                         {supportedFormats.length > 0 && (
                             <select
@@ -295,9 +295,9 @@ function App() {
             </header>
 
             {/* --- Main Stage --- */}
-            <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6">
+            <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-2 md:p-4 lg:p-6 overflow-hidden">
 
-                <div className="relative w-full max-w-6xl aspect-video bg-black/40 rounded-2xl border border-white/5 shadow-2xl ring-1 ring-black/50 overflow-hidden group">
+                <div className="relative w-full max-w-[95vw] lg:max-w-6xl aspect-video bg-black/40 rounded-xl md:rounded-2xl border border-white/5 shadow-2xl ring-1 ring-black/50 overflow-hidden group">
 
                     {/* Teleprompter Overlay */}
                     {showTeleprompter && (
@@ -382,22 +382,22 @@ function App() {
             </main>
 
             {/* --- Floating Control Dock --- */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-                <div className="flex items-center gap-3 p-2 pl-4 pr-2 bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-black/50 transition-all hover:scale-[1.01]">
+            <div className="fixed bottom-2 md:bottom-4 lg:bottom-8 left-1/2 -translate-x-1/2 z-50 w-[95vw] md:w-auto max-w-[95vw]">
+                <div className="flex items-center gap-1 md:gap-3 p-1 md:p-2 pl-2 md:pl-4 pr-1 md:pr-2 bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl ring-1 ring-black/50 transition-all hover:scale-[1.01] justify-center">
 
                     {/* Timer & Status */}
-                    <div className="flex flex-col mr-2 min-w-[60px]">
+                    <div className="flex flex-col mr-1 md:mr-2 min-w-[50px] md:min-w-[60px]">
                         {isRecording ? (
                             <>
-                                <span className="text-xs font-mono font-bold text-red-400 tabular-nums tracking-wider">{formatTime(recordingTime)}</span>
-                                <span className="text-[9px] font-bold text-red-500/50 uppercase tracking-widest animate-pulse">REC</span>
+                                <span className="text-[10px] md:text-xs font-mono font-bold text-red-400 tabular-nums tracking-wider">{formatTime(recordingTime)}</span>
+                                <span className="text-[8px] md:text-[9px] font-bold text-red-500/50 uppercase tracking-widest animate-pulse">REC</span>
                             </>
                         ) : (
-                            <span className="text-xs font-medium text-zinc-500">Ready</span>
+                            <span className="text-[10px] md:text-xs font-medium text-zinc-500">Ready</span>
                         )}
                     </div>
 
-                    <div className="w-px h-8 bg-white/5 mx-1" />
+                    <div className="hidden md:block w-px h-8 bg-white/5 mx-1" />
 
                     {/* Main Record Button */}
                     {!isRecording ? (
@@ -514,20 +514,21 @@ function App() {
 
             {/* --- Preview & Save Modal --- */}
             {previewBlob && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-zinc-950/95 via-indigo-950/90 to-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300 p-4">
-                    <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl w-full max-w-4xl p-6 flex flex-col gap-6 ring-1 ring-white/5">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-zinc-950/95 via-indigo-950/90 to-zinc-950/95 backdrop-blur-xl animate-in fade-in duration-300 p-2 md:p-4 overflow-hidden">
+                    <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-2xl border border-white/10 rounded-xl md:rounded-2xl shadow-2xl w-full max-w-[98vw] md:max-w-4xl h-[96vh] md:h-auto max-h-[96vh] p-3 md:p-6 flex flex-col gap-3 md:gap-6 ring-1 ring-white/5 overflow-hidden">
 
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                            <h2 className="text-xl font-bold text-zinc-100 flex items-center gap-2">
-                                <span className="w-2 h-6 bg-indigo-500 rounded-full"></span>
-                                Review Recording
+                        <div className="flex justify-between items-center border-b border-white/5 pb-2 md:pb-4 shrink-0">
+                            <h2 className="text-base md:text-xl font-bold text-zinc-100 flex items-center gap-2">
+                                <span className="w-1.5 h-4 md:w-2 md:h-6 bg-indigo-500 rounded-full"></span>
+                                <span className="hidden sm:inline">Review Recording</span>
+                                <span className="sm:hidden">Review</span>
                             </h2>
-                            <div className="px-3 py-1 bg-zinc-800 rounded-full text-xs font-mono text-zinc-400">
+                            <div className="px-2 md:px-3 py-0.5 md:py-1 bg-zinc-800 rounded-full text-[10px] md:text-xs font-mono text-zinc-400">
                                 {previewBlob.type.split(';')[0]}
                             </div>
                         </div>
 
-                        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl relative ring-1 ring-white/10">
+                        <div className="aspect-video bg-black rounded-lg md:rounded-xl overflow-hidden shadow-2xl relative ring-1 ring-white/10 shrink-0">
                             <video
                                 ref={previewVideoRef}
                                 controls
@@ -537,7 +538,7 @@ function App() {
                         </div>
 
                         {/* Trimming UI */}
-                        <div className="bg-zinc-950/50 rounded-xl p-4 border border-white/5 flex flex-col gap-4">
+                        <div className="bg-zinc-950/50 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/5 flex flex-col gap-2 md:gap-4 shrink-0 max-h-[25vh] overflow-y-auto">
                             <div className="flex justify-between items-center text-sm">
                                 <span className="font-medium text-zinc-400">Timeline Trim</span>
                                 <div className="flex gap-4 font-mono text-xs text-zinc-500">
@@ -558,25 +559,25 @@ function App() {
                                 <div className="absolute h-4 w-4 bg-white rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-2 hover:scale-110 transition-transform" style={{ left: `${(trimEnd / videoDuration) * 100}%` }} title="End Point" />
                             </div>
 
-                            <div className="flex gap-4 pt-2">
-                                <button onClick={() => setTrimStart(previewVideoRef.current?.currentTime || 0)} className="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors">Set Start to Current</button>
-                                <button onClick={() => setTrimEnd(previewVideoRef.current?.currentTime || 0)} className="text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors">Set End to Current</button>
-                                <div className="flex-1" />
-                                <button onClick={playPreview} className="text-xs flex items-center gap-2 px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded border border-indigo-500/20 transition-all"><IconPlay size={12} /> Preview Selection</button>
+                            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                                <button onClick={() => setTrimStart(previewVideoRef.current?.currentTime || 0)} className="text-[10px] md:text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors whitespace-nowrap">Set Start</button>
+                                <button onClick={() => setTrimEnd(previewVideoRef.current?.currentTime || 0)} className="text-[10px] md:text-xs px-2 py-1 bg-zinc-800 hover:bg-zinc-700 text-indigo-300 rounded border border-white/5 transition-colors whitespace-nowrap">Set End</button>
+                                <div className="hidden sm:block flex-1" />
+                                <button onClick={playPreview} className="text-[10px] md:text-xs flex items-center gap-2 px-3 py-1 bg-indigo-500/10 hover:bg-indigo-500 text-indigo-300 hover:text-white rounded border border-indigo-500/20 transition-all justify-center"><IconPlay size={12} /> Preview</button>
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs text-zinc-500 font-medium ml-1 uppercase tracking-wider">Project Name</label>
+                        <div className="flex flex-col gap-1 md:gap-2 shrink-0">
+                            <label className="text-[10px] md:text-xs text-zinc-500 font-medium ml-1 uppercase tracking-wider">Project Name</label>
                             <input
                                 type="text"
                                 value={fileName}
                                 onChange={(e) => setFileName(e.target.value)}
-                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-100 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
+                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm text-zinc-100 focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 outline-none transition-all"
                             />
                         </div>
 
-                        <div className="flex justify-between items-center pt-2">
+                        <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2 pt-2 shrink-0">
                             {!showDiscardConfirm ? (
                                 <button onClick={() => setShowDiscardConfirm(true)} className="px-4 py-2 text-sm text-zinc-500 hover:text-red-400 transition-colors">Discard</button>
                             ) : (
