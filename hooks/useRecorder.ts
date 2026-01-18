@@ -134,11 +134,12 @@ export const useRecorder = (): UseRecorderReturn => {
   useEffect(() => {
     const checkFormats = () => {
       const options: FormatOption[] = [];
+      // Prioritize MP4 for better seeking support
       const types = [
-        { label: 'MP4', mime: 'video/mp4;codecs=avc1,mp4a.40.2' },
+        { label: 'MP4 (H.264)', mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2' },
         { label: 'MP4', mime: 'video/mp4' },
-        { label: 'WebM', mime: 'video/webm;codecs=vp9,opus' },
-        { label: 'WebM', mime: 'video/webm;codecs=vp8,opus' },
+        { label: 'WebM (VP9)', mime: 'video/webm;codecs=vp9,opus' },
+        { label: 'WebM (VP8)', mime: 'video/webm;codecs=vp8,opus' },
         { label: 'WebM', mime: 'video/webm' }
       ];
 
@@ -364,9 +365,10 @@ export const useRecorder = (): UseRecorderReturn => {
       setStatus(RecorderStatus.COUNTDOWN);
       for (let i = settings.countdownDuration; i > 0; i--) { setCountdownValue(i); await new Promise(r => setTimeout(r, 1000)); }
 
+      // Enhanced MediaRecorder options for better seeking support
       const opts: MediaRecorderOptions = {
-        mimeType: settings.mimeType || 'video/webm',
-        videoBitsPerSecond: settings.quality === '4k' ? 15000000 : 8000000,
+        mimeType: settings.mimeType || 'video/webm;codecs=vp9,opus',
+        videoBitsPerSecond: settings.quality === '4k' ? 15000000 : (settings.quality === '1080p' ? 8000000 : 5000000),
         audioBitsPerSecond: 320000
       };
 
@@ -376,7 +378,8 @@ export const useRecorder = (): UseRecorderReturn => {
       recorder.onstop = async () => { cleanup(); await preparePreview(); };
 
       screenStream.getVideoTracks()[0].onended = () => stopRecording();
-      recorder.start(1000);
+      // Use 100ms timeslice for better seeking granularity
+      recorder.start(100);
       setStatus(RecorderStatus.RECORDING);
     } catch (err: any) {
       setStatus(RecorderStatus.ERROR); setErrorMessage(err.message || "Recording failed."); cleanup();
