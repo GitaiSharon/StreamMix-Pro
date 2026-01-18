@@ -1,0 +1,9 @@
+{
+  "name": "StreamMix Pro",
+  "description": "Professional screen and audio recorder for online meetings. Captures and mixes system audio and microphone input into a single high-quality video file.",
+  "requestFramePermissions": [
+    "microphone",
+    "display-capture",
+    "camera"
+  ]
+}
