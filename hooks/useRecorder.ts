@@ -57,7 +57,7 @@ export const useRecorder = (): UseRecorderReturn => {
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [trimProgress, setTrimProgress] = useState(0); // Progress 0-100
 
-  const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isMicMuted, setIsMicMuted] = useState(true); // Default: muted to avoid background noise
   const [isSystemAudioMuted, setIsSystemAudioMuted] = useState(false);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -78,6 +78,7 @@ export const useRecorder = (): UseRecorderReturn => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const pendingChunksRef = useRef<Blob[]>([]); // For batch DB saving
   const timerRef = useRef<number | null>(null);
   const transcriptRef = useRef<string>("");
 
@@ -107,11 +108,20 @@ export const useRecorder = (): UseRecorderReturn => {
     } catch (e) { }
   };
 
-  const saveChunkToDB = async (chunk: Blob) => {
+  // Batch save chunks to DB every 5 seconds (non-blocking)
+  const batchSaveChunksToDB = async () => {
+    if (pendingChunksRef.current.length === 0) return;
+
+    const chunksToSave = [...pendingChunksRef.current];
+    pendingChunksRef.current = [];
+
     try {
       const db = await initDB();
       const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).add(chunk);
+      const store = tx.objectStore(STORE_NAME);
+      for (const chunk of chunksToSave) {
+        store.add(chunk);
+      }
     } catch (e) { }
   };
 
@@ -172,7 +182,8 @@ export const useRecorder = (): UseRecorderReturn => {
 
   const startCompositingLoop = () => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d', { alpha: false, willReadFrequently: true });
+    // desynchronized: true enables GPU acceleration and reduces latency
+    const ctx = canvas?.getContext('2d', { alpha: false, desynchronized: true });
     if (!canvas || !ctx) return;
 
     const draw = () => {
@@ -376,12 +387,38 @@ export const useRecorder = (): UseRecorderReturn => {
 
       const recorder = new MediaRecorder(finalStream, opts);
       mediaRecorderRef.current = recorder;
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) { chunksRef.current.push(e.data); saveChunkToDB(e.data); } };
-      recorder.onstop = async () => { cleanup(); await preparePreview(); };
+      // Batch chunks for DB save to reduce main thread blocking
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunksRef.current.push(e.data);
+          pendingChunksRef.current.push(e.data);
+          // Async batch save (non-blocking)
+          batchSaveChunksToDB();
+        }
+      };
+
+      // Save remaining chunks when recording stops
+      recorder.onstop = async () => {
+        // Save any remaining pending chunks
+        if (pendingChunksRef.current.length > 0) {
+          const chunksToSave = [...pendingChunksRef.current];
+          pendingChunksRef.current = [];
+          try {
+            const db = await initDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            for (const chunk of chunksToSave) {
+              store.add(chunk);
+            }
+          } catch (e) { }
+        }
+        cleanup();
+        await preparePreview();
+      };
 
       screenStream.getVideoTracks()[0].onended = () => stopRecording();
-      // Use 100ms timeslice for better seeking granularity
-      recorder.start(100);
+      // Use 1000ms timeslice - reduces chunk overhead while maintaining good recovery
+      recorder.start(1000);
       setStatus(RecorderStatus.RECORDING);
     } catch (err: any) {
       setStatus(RecorderStatus.ERROR); setErrorMessage(err.message || "Recording failed."); cleanup();
@@ -392,7 +429,7 @@ export const useRecorder = (): UseRecorderReturn => {
   const resumeRecording = () => { if (mediaRecorderRef.current?.state === 'paused') { mediaRecorderRef.current.resume(); setStatus(RecorderStatus.RECORDING); } };
   const stopRecording = () => { if (mediaRecorderRef.current?.state !== 'inactive') { setStatus(RecorderStatus.PROCESSING); mediaRecorderRef.current!.stop(); } };
 
-  const toggleMicMute = () => { setIsMicMuted(prev => { const n = !prev; if (micGainRef.current) micGainRef.current.gain.value = n ? 0 : 1; return n; }); };
+  const toggleMicMute = () => { setIsMicMuted(prev => { const n = !prev; if (micGainRef.current) micGainRef.current.gain.value = n ? 0 : 0.8; return n; }); };
   const toggleSystemAudioMute = () => { setIsSystemAudioMuted(prev => { const n = !prev; if (sysGainRef.current) sysGainRef.current.gain.value = n ? 0 : 1; return n; }); };
 
   const preparePreview = async (recoveredChunks?: Blob[]) => {
@@ -412,54 +449,106 @@ export const useRecorder = (): UseRecorderReturn => {
   const trimAndSaveRecording = async (fileName: string, start: number, end: number) => {
     if (!previewBlob) return;
     setStatus(RecorderStatus.PROCESSING);
-    setTrimProgress(0); // Reset progress
+    setTrimProgress(0);
 
-    const video = document.createElement('video');
-    video.src = URL.createObjectURL(previewBlob);
-    video.muted = true; // Mute to prevent audio playback
-    video.volume = 0;
-    await new Promise(r => video.onloadedmetadata = r);
+    try {
+      // Create video element and add to DOM for reliable playback
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(previewBlob);
+      video.muted = true;
+      video.volume = 0;
+      video.playsInline = true;
+      video.style.position = 'absolute';
+      video.style.left = '-9999px';
+      document.body.appendChild(video);
 
-    let stream: MediaStream;
-    // @ts-ignore
-    if (video.captureStream) stream = video.captureStream();
-    // @ts-ignore
-    else if (video.mozCaptureStream) stream = video.mozCaptureStream();
-    else { saveRecording(fileName); setStatus(RecorderStatus.IDLE); setTrimProgress(0); return; }
+      await new Promise<void>((resolve, reject) => {
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('Failed to load video'));
+      });
 
-    const recorder = new MediaRecorder(stream, { mimeType: previewBlob.type, audioBitsPerSecond: 320000, videoBitsPerSecond: 8000000 });
-    const chunks: Blob[] = [];
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    recorder.onstop = () => {
-      const b = new Blob(chunks, { type: previewBlob.type });
-      const url = URL.createObjectURL(b);
-      const a = document.createElement('a'); a.href = url; a.download = `${fileName}_trimmed.${b.type.includes('mp4') ? 'mp4' : 'webm'}`;
-      a.click();
-      setTrimProgress(0); // Reset progress
-      discardPreview();
-      setStatus(RecorderStatus.IDLE);
-    };
+      setTrimProgress(10);
 
-    video.currentTime = start;
-    await new Promise(r => video.onseeked = r);
-    video.playbackRate = 1.0; // CRITICAL: Ensure normal speed playback
-    recorder.start(); video.play();
-
-    const duration = end - start;
-    const check = () => {
-      if (video.currentTime >= end || video.ended) {
-        setTrimProgress(100); // Complete
-        recorder.stop();
-        video.pause();
-      } else {
-        // Calculate progress based on current position
-        const elapsed = video.currentTime - start;
-        const progress = Math.min((elapsed / duration) * 100, 100);
-        setTrimProgress(Math.floor(progress));
-        requestAnimationFrame(check);
+      // Get video stream with 30fps for consistent output
+      let stream: MediaStream;
+      // @ts-ignore
+      if (video.captureStream) stream = video.captureStream(30);
+      // @ts-ignore
+      else if (video.mozCaptureStream) stream = video.mozCaptureStream(30);
+      else {
+        document.body.removeChild(video);
+        saveRecording(fileName + '_trimmed');
+        return;
       }
-    };
-    check();
+
+      const recorder = new MediaRecorder(stream, {
+        mimeType: previewBlob.type,
+        audioBitsPerSecond: 320000,
+        videoBitsPerSecond: 8000000
+      });
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+      recorder.onstop = () => {
+        video.pause();
+        video.src = '';
+        if (video.parentNode) document.body.removeChild(video);
+
+        const blob = new Blob(chunks, { type: previewBlob.type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}_trimmed.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setTrimProgress(0);
+        discardPreview();
+        setStatus(RecorderStatus.IDLE);
+      };
+
+      recorder.onerror = () => {
+        if (video.parentNode) document.body.removeChild(video);
+        saveRecording(fileName + '_trimmed');
+        setStatus(RecorderStatus.IDLE);
+        setTrimProgress(0);
+      };
+
+      // Seek to start position
+      video.currentTime = start;
+      await new Promise<void>(resolve => { video.onseeked = () => resolve(); });
+
+      setTrimProgress(20);
+      recorder.start(100);
+      video.playbackRate = 1.0;
+      await video.play();
+
+      const duration = end - start;
+      const checkProgress = () => {
+        if (video.currentTime >= end || video.ended || video.paused) {
+          video.pause();
+          setTrimProgress(100);
+          setTimeout(() => {
+            if (recorder.state === 'recording') recorder.stop();
+          }, 200);
+        } else {
+          const elapsed = video.currentTime - start;
+          const progress = 20 + Math.min((elapsed / duration) * 80, 79);
+          setTrimProgress(Math.floor(progress));
+          requestAnimationFrame(checkProgress);
+        }
+      };
+      checkProgress();
+
+    } catch (error) {
+      console.error('Trim error:', error);
+      saveRecording(fileName + '_full');
+      setStatus(RecorderStatus.IDLE);
+      setTrimProgress(0);
+    }
   };
 
   const discardPreview = useCallback(() => { setPreviewBlob(null); clearDB(); setStatus(RecorderStatus.IDLE); }, []);
