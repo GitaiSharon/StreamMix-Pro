@@ -170,7 +170,13 @@ export const useRecorder = (): UseRecorderReturn => {
 
   useEffect(() => {
     if (status === RecorderStatus.RECORDING) {
-      timerRef.current = window.setInterval(() => setRecordingTime(p => p + 1), 1000);
+      timerRef.current = window.setInterval(() => {
+        setRecordingTime(p => p + 1);
+        // Check and resume audio context if needed (fixes drift if context suspends)
+        if (audioContextRef.current && audioContextRef.current.state === 'suspended') {
+          audioContextRef.current.resume();
+        }
+      }, 1000);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
       if (status === RecorderStatus.IDLE) setRecordingTime(0);
@@ -248,7 +254,9 @@ export const useRecorder = (): UseRecorderReturn => {
 
   const setupAudio = async (micStream: MediaStream | null, sysStream: MediaStream | null, useDelay: boolean) => {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    const ctx = new AudioContextClass({ sampleRate: 48000, latencyHint: 'playback' });
+    // Remove fixed sampleRate to let browser use native device rate (prevents drift)
+    // Use 'interactive' latency for tighter audio/video sync
+    const ctx = new AudioContextClass({ latencyHint: 'interactive' });
     if (ctx.state === 'suspended') await ctx.resume();
     audioContextRef.current = ctx;
 
@@ -300,7 +308,8 @@ export const useRecorder = (): UseRecorderReturn => {
 
       let micStream: MediaStream | null = null;
       if (settings.enableAudio) {
-        try { micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 } }); } catch (e) { }
+        // Remove fixed sampleRate here too
+        try { micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); } catch (e) { }
       }
 
       const mixedAudioTrack = await setupAudio(micStream, screenStream, settings.recordingMode === 'studio');
