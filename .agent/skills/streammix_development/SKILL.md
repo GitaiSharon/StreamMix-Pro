@@ -66,3 +66,8 @@ If the recorder gets stuck:
 1. Call `discardPreview()`
 2. Clear IndexedDB (`clearDB()`)
 3. Reset `MediaRecorder` instance.
+
+## 💻 Development Environment
+
+- **Port:** Configured to strictly use `3000`.
+- **Duplicate Prevention:** `strictPort: true` is enabled in `vite.config.ts`. If port 3000 is busy, the startup will fail rather than spawning a new port. Use `npx kill-port 3000` (Windows) or close the other terminal to resolve.
