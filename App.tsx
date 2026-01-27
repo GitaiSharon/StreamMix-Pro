@@ -1,4 +1,6 @@
 
+declare const __APP_VERSION__: string;
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useRecorder } from './hooks/useRecorder';
 import { AudioVisualizer } from './components/AudioVisualizer';
@@ -678,6 +680,11 @@ function App() {
                     </div>
                 </div>
             )}
+
+            {/* Version Label */}
+            <div className="fixed bottom-2 left-2 z-10 px-2 py-1 bg-zinc-900/60 backdrop-blur-sm border border-white/5 rounded-md text-[10px] font-mono text-zinc-500 select-none hover:text-zinc-300 transition-colors">
+                v{__APP_VERSION__}
+            </div>
 
         </div>
     );
